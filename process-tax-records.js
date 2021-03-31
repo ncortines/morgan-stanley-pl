@@ -142,7 +142,20 @@
         })
         .then(response => response.json())
 
-    const fetchSaleDetails = transactionId =>
+    const fetchSaleDetails = sale => {
+        if (sale.txApiType === 'WITHDRAWAL_REALTIME_TRANSACTION') {
+            return fetchRtSaleDetails(sale.realtimeTransactionPK)
+        }
+        if (sale.txApiType === 'ISOT') {
+            return fetchSOSaleDetails(sale.isotGroupPK)
+        }
+        return fetchStdSaleDetails(sale.spfWithdrawalPK)
+    }
+
+    const fetchSOSaleDetails = transactionId =>
+        fetchData(`${session.api.baseUri}${session.api.baseLegacyUriSuffix}/isots/${transactionId}?includeAllFills=true`)
+
+    const fetchStdSaleDetails = transactionId =>
         fetchData(session.api.baseUri + session.api.baseLegacyUriSuffix + '/withdrawals/' + transactionId)
 
     const fetchRtSaleDetails = transactionId =>
@@ -211,14 +224,13 @@
     console.info('fetching data...')
 
     const isStockSaleRecord = record =>
-        record.txApiType.includes('WITHDRAWAL') && record.fundType === 'STOCK'
+        (record.txApiType === 'ISOT' || record.txApiType.includes('WITHDRAWAL')) && record.fundType === 'STOCK'
 
     const getSaleRecords = () =>
         fetchHistoryRecords()
             .then(records => records.filter(record => isStockSaleRecord(record) && (new Date(record.settlementDate)).getFullYear() === theYear))
             .then(sales => Promise.all(sales.map(sale => {
-                const promise = sale.txApiType === 'WITHDRAWAL_REALTIME_TRANSACTION' ? fetchRtSaleDetails(sale.realtimeTransactionPK) : fetchSaleDetails(sale.spfWithdrawalPK)
-                return promise.then(processSaleDetails)
+                return fetchSaleDetails(sale).then(processSaleDetails)
             })))
 
     Promise.all([
