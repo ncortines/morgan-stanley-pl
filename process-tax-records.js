@@ -147,7 +147,15 @@
             return fetchRtSaleDetails(sale.realtimeTransactionPK)
         }
         if (sale.txApiType === 'ISOT') {
+            console.log("need this: ")
+            console.log(JSON.stringify(sale, undefined, 2))
             return fetchSOSaleDetails(sale.isotGroupPK)
+                .then(details => {
+                    console.log("and need this: ")
+                    console.log(JSON.stringify(details, undefined, 2))
+                    console.log("now crashing :)")
+                    return details
+                })
         }
         return fetchStdSaleDetails(sale.spfWithdrawalPK)
     }
