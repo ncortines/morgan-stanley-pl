@@ -216,10 +216,8 @@
     const getSaleRecords = () =>
         fetchHistoryRecords()
             .then(records => records.filter(record => isStockSaleRecord(record) && (new Date(record.settlementDate)).getFullYear() === theYear))
-            .then(sales => Promise.all(sales.map(sale => {
-                const promise = sale.txApiType === 'WITHDRAWAL_REALTIME_TRANSACTION' ? fetchRtSaleDetails(sale.realtimeTransactionPK) : fetchSaleDetails(sale.spfWithdrawalPK)
-                return promise.then(processSaleDetails)
-            })))
+            .then(sales => Promise.all(sales.map(sale => sale.txApiType === 'WITHDRAWAL_REALTIME_TRANSACTION' ? fetchRtSaleDetails(sale.realtimeTransactionPK) : fetchSaleDetails(sale.spfWithdrawalPK))))
+            .then(salesDetails => Promise.all(salesDetails.filter(saleDetails => !!saleDetails.costBasis).map(processSaleDetails)))
 
     Promise.all([
         getSaleRecords(),
